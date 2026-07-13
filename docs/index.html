@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discogs YouTube Matcher — hear what you find, find what you hear</title>
+<meta name="description" content="A browser extension for record collectors: play any Discogs tracklist straight from the page via YouTube, and see on YouTube whether a track is for sale on vinyl.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sleeve:#141216;
+  --panel:#1d1a20;
+  --panel-2:#221f27;
+  --groove:#2c2830;
+  --bone:#ece7df;
+  --muted:#a89f93;
+  --dim:#7c7468;
+  --amber:#d99a3d;
+  --amber-l:#f0c988;
+  --display:"Bricolage Grotesque",sans-serif;
+  --body:"Instrument Sans",sans-serif;
+  --mono:"Space Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--sleeve);
+  color:var(--bone);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--amber-l)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1060px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono)}
+
+/* ── kop ── */
+header.site{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:22px 0;border-bottom:1px solid var(--groove);
+}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--bone)}
+.brand-disc{width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle,#0a0a0a 0%,#1c1c1c 55%,#0a0a0a 100%);
+  border:1px solid #333;position:relative}
+.brand-disc::after{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--amber)}
+.brand b{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.01em}
+nav.site a{color:var(--muted);text-decoration:none;font-size:14px;margin-left:26px}
+nav.site a:hover{color:var(--bone)}
+
+/* ── hero ── */
+.hero{
+  display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;
+  padding:84px 0 96px;overflow:hidden;
+}
+.eyebrow{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.14em;text-transform:uppercase}
+h1{
+  font-family:var(--display);font-weight:800;
+  font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.02em;
+  margin:16px 0 22px;
+}
+h1 em{font-style:normal;color:var(--amber)}
+.lede{font-size:19px;color:var(--muted);max-width:46ch}
+.cta-row{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
+.btn{
+  display:inline-block;padding:13px 26px;border-radius:8px;
+  font-family:var(--display);font-weight:700;font-size:16px;text-decoration:none;
+  border:1px solid var(--amber);transition:transform .15s ease,background .15s ease;
+}
+.btn.primary{background:var(--amber);color:#1a1207}
+.btn.primary:hover{transform:translateY(-2px);background:var(--amber-l)}
+.btn.ghost{color:var(--amber-l)}
+.btn.ghost:hover{background:var(--panel-2)}
+.hero-note{margin-top:14px;font-size:13px;color:var(--dim)}
+
+/* de plaat die uit de hoes schuift */
+.record-scene{position:relative;height:380px}
+.inner-sleeve{
+  position:absolute;inset:24px 0 24px 34%;
+  background:linear-gradient(160deg,var(--panel),#191621);
+  border:1px solid var(--groove);border-radius:6px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+}
+.inner-sleeve::before{
+  content:"DYM-001 · 33⅓ RPM · STEREO";
+  position:absolute;top:16px;right:18px;
+  font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.12em;
+}
+.record{
+  position:absolute;top:50%;left:0;translate:0 -50%;
+  width:330px;height:330px;border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 50%, #050505 0 18%, transparent 18%),
+    repeating-radial-gradient(circle at 50% 50%, #101010 0 2px, #1a1a1a 2px 4px),
+    #0c0c0c;
+  box-shadow:0 18px 50px rgba(0,0,0,.6), inset 0 0 40px rgba(0,0,0,.8);
+  animation:spin 9s linear infinite;
+  transition:left .6s cubic-bezier(.2,.8,.2,1);
+}
+.record-scene:hover .record{left:-26px}
+.record .label{
+  position:absolute;inset:31%;border-radius:50%;
+  background:radial-gradient(circle,#e6a94c 0%,var(--amber) 70%,#b57e2c 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#221503;text-align:center;
+}
+.record .label b{font-family:var(--display);font-weight:800;font-size:15px;line-height:1.1;letter-spacing:-.01em}
+.record .label span{font-family:var(--mono);font-size:8.5px;margin-top:5px;letter-spacing:.1em}
+.record .label::after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:var(--sleeve)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .record{animation:none}
+  .record-scene:hover .record{left:0}
+  html{scroll-behavior:auto}
+}
+
+/* ── secties ── */
+section{padding:78px 0;border-top:1px solid var(--groove)}
+.section-eyebrow{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px}
+h2{font-family:var(--display);font-weight:800;font-size:clamp(28px,3.6vw,40px);letter-spacing:-.015em;line-height:1.1;margin-bottom:18px}
+h3{font-family:var(--display);font-weight:700;font-size:20px;margin-bottom:10px}
+p+p{margin-top:14px}
+.muted{color:var(--muted)}
+
+/* A-kant / B-kant */
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:38px}
+.side{
+  background:var(--panel);border:1px solid var(--groove);border-radius:10px;
+  padding:30px 28px;position:relative;overflow:hidden;
+}
+.side::before{
+  content:attr(data-side);
+  position:absolute;top:-14px;right:6px;
+  font-family:var(--display);font-weight:800;font-size:110px;line-height:1;
+  color:var(--panel-2);z-index:0;
+}
+.side>*{position:relative;z-index:1}
+.side .where{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.1em;margin-bottom:10px}
+.side p{color:var(--muted);font-size:15.5px}
+
+/* demo-paneel */
+.demo{display:grid;grid-template-columns:1fr 380px;gap:44px;align-items:center}
+.demo-copy p{color:var(--muted)}
+.panel-demo{
+  background:#17151a;border:1px solid var(--groove);border-radius:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);font-size:13px;overflow:hidden;
+}
+.pd-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#1f1c23;border-bottom:1px solid var(--groove)}
+.pd-disc{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,#0a0a0a 0%,#1a1a1a 55%,#0a0a0a 100%);border:1px solid #333;display:flex;align-items:center;justify-content:center;animation:spin 3.5s linear infinite}
+.pd-disc i{width:9px;height:9px;border-radius:50%;background:var(--amber)}
+@media (prefers-reduced-motion:reduce){.pd-disc{animation:none}}
+.pd-title{font-weight:600;font-size:13px}
+.pd-title small{color:var(--dim);font-weight:400;font-size:10px;margin-left:6px}
+.pd-artist{color:var(--muted);font-size:12px}
+.pd-video{aspect-ratio:16/9;background:
+  radial-gradient(ellipse at center,#241f18 0%,#0d0b0e 75%);
+  display:flex;align-items:center;justify-content:center}
+.pd-play{width:46px;height:46px;border-radius:50%;border:2px solid var(--amber);display:flex;align-items:center;justify-content:center}
+.pd-play::after{content:"";border-style:solid;border-width:8px 0 8px 13px;border-color:transparent transparent transparent var(--amber)}
+.pd-now{padding:7px 14px;color:var(--amber-l);font-size:12px;border-bottom:1px solid var(--groove)}
+.pd-row{display:flex;gap:8px;padding:7px 14px;border-left:2px solid transparent;color:var(--bone)}
+.pd-row .pos{flex:0 0 26px;color:var(--dim);font-family:var(--mono);font-size:11px}
+.pd-row .dur{margin-left:auto;color:var(--dim);font-family:var(--mono);font-size:11px}
+.pd-row.playing{border-left-color:var(--amber);background:#241f18;color:var(--amber-l)}
+
+/* installatie-tracklist */
+.tracklist{margin-top:34px;border-top:1px solid var(--groove)}
+.track{
+  display:grid;grid-template-columns:64px 1fr;gap:18px;
+  padding:22px 4px;border-bottom:1px solid var(--groove);
+}
+.track .pos{font-family:var(--mono);font-size:14px;color:var(--amber);padding-top:3px}
+.track h3{margin-bottom:6px}
+.track p{color:var(--muted);font-size:15.5px;max-width:64ch}
+.track code{
+  font-family:var(--mono);font-size:13px;background:var(--panel-2);
+  border:1px solid var(--groove);border-radius:5px;padding:2px 7px;color:var(--amber-l);
+}
+.bonus-note{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin:34px 0 0}
+
+/* liner notes */
+.liner{background:var(--panel);border-top:1px solid var(--groove)}
+.liner .inner{max-width:720px}
+.liner p{color:var(--muted);font-size:15.5px}
+.liner .credits{
+  margin-top:30px;padding-top:22px;border-top:1px solid var(--groove);
+  font-family:var(--mono);font-size:12.5px;color:var(--dim);line-height:2;
+}
+
+footer.site{padding:34px 0 46px;border-top:1px solid var(--groove);
+  display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  font-size:13px;color:var(--dim)}
+footer.site a{color:var(--muted);text-decoration:none}
+footer.site a:hover{color:var(--bone)}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding:56px 0 64px}
+  .record-scene{height:300px;order:-1}
+  .record{width:260px;height:260px}
+  .inner-sleeve{inset:18px 0 18px 30%}
+  .sides{grid-template-columns:1fr}
+  .demo{grid-template-columns:1fr}
+  .panel-demo{max-width:380px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="site">
+  <a class="brand" href="#top"><span class="brand-disc"></span><b>Discogs YouTube Matcher</b></a>
+  <nav class="site">
+    <a href="#kanten">What it does</a>
+    <a href="#installatie">Install</a>
+    <a href="#liner">Liner notes</a>
+  </nav>
+</header>
+
+<section class="hero" id="top" style="border-top:none">
+  <div>
+    <p class="eyebrow">Discogs Youtube Browser extension for Chrome</p>
+    <h1>Hear what you find.<br><em>Find what you hear.</em></h1>
+    <p class="lede">On Discogs, every record becomes a playable tracklist via YouTube. On YouTube, every track shows whether it’s for sale on vinyl, and for how much. One extension, two directions, zero friction.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="discogs-youtube-matcher.zip" download>Download the extension</a>
+      <a class="btn ghost" href="#installatie">How to install</a>
+    </div>
+    <p class="hero-note">Free and open. Works in Chrome, Brave, Edge and Arc. Version 0.33.</p>
+  </div>
+  <div class="record-scene" aria-hidden="true">
+    <div class="inner-sleeve"></div>
+    <div class="record">
+      <div class="label"><b>DISCOGS<br>YOUTUBE<br>MATCHER</b><span>SIDE A · 2026</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="kanten">
+  <p class="section-eyebrow">Two sides, as it should be</p>
+  <h2>A record has an A-side and a B-side.<br>So does this extension.</h2>
+  <div class="sides">
+    <div class="side" data-side="A">
+      <p class="where">On Discogs</p>
+      <h3>Digging with sound</h3>
+      <p>Open any release, master or marketplace item and a panel appears with the full tracklist. Click a track and it plays, and the rest of the record follows on its own. The matcher reads mix names and uses track durations to find the right version, so a Club Mix never turns into a Radio Edit. No linked video? It searches YouTube itself and holds every result to the same standard.</p>
+    </div>
+    <div class="side" data-side="B">
+      <p class="where">On YouTube</p>
+      <h3>Hear it, hold it</h3>
+      <p>Playing a track on YouTube? The panel tells you whether it was ever pressed on vinyl and whether copies are for sale on Discogs, with the number of listings and the lowest price. One click and you’re at the release, ready to make it yours.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="demo">
+    <div class="demo-copy">
+      <p class="section-eyebrow">The panel</p>
+      <h2>Quietly present, right where you look</h2>
+      <p>The panel settles into the bottom corner of the page, dressed like an inner sleeve. Below the player it always shows the full title of the video that’s playing, so you know the right version is spinning. If a video refuses to be embedded, the extension quietly switches to an alternative upload of the same track.</p>
+      <p>It plays through your own YouTube account, so with Premium it’s ad-free here too.</p>
+    </div>
+    <div class="panel-demo" role="img" aria-label="Example of the player panel on a Discogs page">
+      <div class="pd-head">
+        <span class="pd-disc"><i></i></span>
+        <div>
+          <div class="pd-title">Flawless <small>v0.33</small></div>
+          <div class="pd-artist">The Ones</div>
+        </div>
+      </div>
+      <div class="pd-video"><span class="pd-play"></span></div>
+      <div class="pd-now">▶ The Ones – Flawless (Phunk Investigation Vocal Mix)</div>
+      <div class="pd-row playing"><span class="pos">A1</span>Flawless (Phunk Investigation Vocal Mix)<span class="dur">7:39</span></div>
+      <div class="pd-row"><span class="pos">AA1</span>Flawless (Sharp Hammerhead Remix)<span class="dur">5:45</span></div>
+      <div class="pd-row"><span class="pos">AA2</span>Flawless (Different Gear Remix)<span class="dur">6:23</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="installatie">
+  <p class="section-eyebrow">Installation</p>
+  <h2>The first-time tracklist</h2>
+  <p class="muted">Five short steps, and two bonus tracks for those who want everything out of it.</p>
+
+  <div class="tracklist">
+    <div class="track"><span class="pos">A1</span>
+      <div><h3>Download and unpack</h3>
+      <p>Download the zip above and unpack it into a permanent folder. Your browser reads the extension from that spot, so pick a place where it can live.</p></div>
+    </div>
+    <div class="track"><span class="pos">A2</span>
+      <div><h3>Open the extensions page</h3>
+      <p>Type <code>chrome://extensions</code> in the address bar and switch on developer mode, top right.</p></div>
+    </div>
+    <div class="track"><span class="pos">A3</span>
+      <div><h3>Load the folder</h3>
+      <p>Choose "Load unpacked" and point it at the unpacked folder. The extension appears in your list right away.</p></div>
+    </div>
+    <div class="track"><span class="pos">A4</span>
+      <div><h3>Open a record</h3>
+      <p>Go to any release on Discogs. The panel appears bottom right, with the first track already cued up.</p></div>
+    </div>
+    <div class="track"><span class="pos">A5</span>
+      <div><h3>Spin it</h3>
+      <p>Click a track and listen. That’s all there is to it.</p></div>
+    </div>
+  </div>
+
+  <p class="bonus-note">Bonus tracks</p>
+  <div class="tracklist" style="margin-top:10px">
+    <div class="track"><span class="pos">B1</span>
+      <div><h3>YouTube Premium in the panel</h3>
+      <p>The embedded player uses your regular YouTube login once Chrome allows third-party cookies on Discogs. Open <code>chrome://settings/cookies</code> and add <code>[*.]discogs.com</code> under "Sites allowed to use third-party cookies". From then on the panel is your signed-in, ad-free YouTube.</p></div>
+    </div>
+    <div class="track"><span class="pos">B2</span>
+      <div><h3>Finding vinyl from YouTube</h3>
+      <p>For the B-side, Discogs asks for a free personal token. Create one in a minute at <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener">discogs.com/settings/developers</a> and paste it into the panel on YouTube. It stays stored locally in your browser.</p></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<section class="liner" id="liner">
+  <div class="wrap inner">
+    <p class="section-eyebrow">Liner notes</p>
+    <h2>How this record was made</h2>
+    <p>This started one morning with a simple itch: I was digging through Discogs and spending half my time copying artist names over to YouTube and back. That same afternoon the first version was running, built in conversation with AI, and every listening session since has made it better. The matcher learned to read mix names on a single by The Ones, the player learned to skip honestly on a Cherrymoon Trax record, a missing Radio Edit by Rhythm Controll taught it to search YouTube for itself, and the B-side grew out of the question every collector knows: I want to hold this one, where is it?</p>
+    <p>There are other extensions that make Discogs audible, and a few have done it well for years. This one does two things differently: it works in both directions, and it asks for almost nothing. No subscription, no account, no access to your data. The code is yours the moment you download it; if you want to tinker, tinker.</p>
+    <div class="credits">
+      MADE ON SCHIERMONNIKOOG · BUILT IN CONVERSATION WITH AI · TESTED ON DISCO, TECHNO AND MADONNA<br>
+      NOT AN OFFICIAL DISCOGS OR YOUTUBE APPLICATION · ALL TRADEMARKS BELONG TO THEIR RESPECTIVE OWNERS
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+<footer class="site">
+  <span>Discogs YouTube Matcher · DYM-001 · 2026</span>
+  <span><a href="#top">Back to top</a></span>
+</footer>
+</div>
+
+</body>
+</html>

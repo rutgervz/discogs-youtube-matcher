@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Discogs YouTube Matcher",
+  "version": "0.33",
+  "description": "Discogs en YouTube in twee richtingen: tracklists afspelen op Discogs, en op YouTube zien of een nummer op vinyl te koop is.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.discogs.com/*",
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.discogs.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "yt-content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
