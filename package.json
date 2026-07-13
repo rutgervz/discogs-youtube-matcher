@@ -1,0 +1,8 @@
+{
+  "name": "discogs-youtube-matcher",
+  "version": "0.33.0",
+  "private": true,
+  "scripts": {
+    "test": "node tests/matcher.test.js"
+  }
+}
