@@ -1,4 +1,4 @@
-/* VinylTube paneel — donkere binnenhoes, amberkleurige naald-accenten */
+/* VinylTube panel — dark inner sleeve, amber stylus accents */
 
 #vinyltube-panel {
   position: fixed;
@@ -111,6 +111,33 @@
 }
 
 #vinyltube-panel.vt-collapsed .vt-body {
+  display: none;
+}
+
+/* Collapsed: just the spinning disc, nothing else */
+#vinyltube-panel.vt-collapsed,
+#vinyltube-yt-panel.vt-collapsed {
+  width: auto;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#vinyltube-panel.vt-collapsed .vt-head,
+#vinyltube-yt-panel.vt-collapsed .vt-head {
+  padding: 6px;
+  background: transparent;
+  border-bottom: none;
+}
+
+#vinyltube-panel.vt-collapsed .vt-head-text,
+#vinyltube-panel.vt-collapsed .vt-collapse,
+#vinyltube-yt-panel.vt-collapsed .vt-head-text,
+#vinyltube-yt-panel.vt-collapsed .vt-collapse {
+  display: none;
+}
+
+/* Video in fullscreen: panel fully out of sight */
+#vinyltube-yt-panel.vt-fs-hidden {
   display: none;
 }
 
@@ -306,7 +333,7 @@
   text-decoration: underline;
 }
 
-/* YouTube-paneel: vinylresultaten */
+/* YouTube panel: vinyl results */
 
 #vinyltube-yt-panel {
   position: fixed;

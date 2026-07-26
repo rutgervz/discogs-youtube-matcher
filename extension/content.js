@@ -1,8 +1,8 @@
 // VinylTube content script
-// Detecteert Discogs release-, master- en shoppagina's en toont een paneel
-// met de tracklist, afspeelbaar in een ingebedde YouTube-speler in het
-// paneel zelf. Met ingelogde YouTube-cookies (derden toegestaan voor
-// youtube.com) geldt Premium ook in de embed: geen reclame.
+// Detects Discogs release, master and shop pages and shows a panel with
+// the tracklist, playable in a YouTube player embedded in the panel
+// itself. With signed-in YouTube cookies (third-party allowed for
+// youtube.com) Premium also applies inside the embed: no ads.
 
 (() => {
   let currentKey = null;
@@ -31,17 +31,17 @@
   }
 
   function toSeconds(dur) {
-    // "6:24" of "1:02:30" naar seconden; leeg blijft null.
+    // "6:24" or "1:02:30" to seconds; empty stays null.
     if (!dur) return null;
     const parts = String(dur).split(":").map((p) => parseInt(p, 10));
     if (parts.some(isNaN)) return null;
     return parts.reduce((acc, p) => acc * 60 + p, 0);
   }
 
-  // Koppel elke track aan de best passende video. Mixnamen (Club Mix,
-  // Radio Edit) wegen mee via woordoverlap; bij twijfel beslist de
-  // tijdsduur. Toewijzing verloopt van hoogste naar laagste score,
-  // elke video maximaal één keer.
+  // Match every track to the best fitting video. Mix names (Club Mix,
+  // Radio Edit) weigh in through word overlap; in case of doubt the
+  // duration decides. Assignment runs from highest to lowest score,
+  // each video used at most once.
   function matchVideos(tracks, videos) {
     const pool = videos
       .map((v, i) => {
@@ -74,32 +74,32 @@
       const trackSeconds = toSeconds(t.duration);
       pool.forEach((v) => {
         if (!tokens.length) return;
-        // Woordvergelijking op hele woorden, geen substrings.
+        // Word comparison on whole words, no substrings.
         const hits = tokens.filter((w) => v.words.has(w)).length;
         let score = hits / tokens.length;
         if (score < 0.5) {
-          // Videotitel zonder mixnaam: als de kern van de tracktitel er
-          // volledig in zit, mag de tijdsduur het verschil maken.
+          // Video title without mix name: if the core of the track title
+          // is fully present, the duration may make the difference.
           const coreOk =
             coreTokens.length > 0 && coreTokens.every((w) => v.words.has(w));
           if (!coreOk) return;
           score = 0.5;
         }
-        if ((" " + v.norm + " ").includes(" " + norm + " ")) score += 1; // volledige titel incl. mixnaam
+        if ((" " + v.norm + " ").includes(" " + norm + " ")) score += 1; // full title incl. mix name
         if (trackSeconds != null && v.seconds) {
           const diff = Math.abs(trackSeconds - v.seconds);
           if (diff <= 8) score += 0.6;
           else if (diff <= 25) score += 0.3;
-          else if (diff > 90) score -= 0.5; // duidelijk een andere versie
+          else if (diff > 90) score -= 0.5; // clearly a different version
         }
-        // Mixconflict: de video draagt versiewoorden die de track niet
-        // heeft (Long Version tegenover Radio Edit) — stevige aftrek.
+        // Mix conflict: the video carries version words the track does
+        // not have (Long Version versus Radio Edit) — hefty penalty.
         let conflict = false;
         for (const w of v.words) {
           if (MIX_WORDS.has(w) && !tokenSet.has(w)) { conflict = true; break; }
         }
         if (conflict) score -= 0.8;
-        // Ondergrens: liever eerlijk geen match dan zeker een verkeerde.
+        // Lower bound: better honestly no match than certainly a wrong one.
         if (score < 0.7) return;
         scored.push({ ti, v, score });
       });
@@ -115,7 +115,7 @@
       usedVideos.add(s.v.ytId);
     }
 
-    // Diagnose: per track de beste kandidaten, voor het inspectiepaneel.
+    // Diagnostics: the best candidates per track, for the inspection panel.
     lastDebug = tracks.map((t, ti) => {
       const candidates = scored
         .filter((s) => s.ti === ti)
@@ -129,8 +129,8 @@
       return { track: t.title, duration: t.duration, candidates };
     });
 
-    // Terugvalopties: per track alle kandidaten op scorevolgorde, en een
-    // index van videotitels, voor als de beste video niet inbedbaar blijkt.
+    // Fallback options: all candidates per track in score order, and an
+    // index of video titles, for when the best video turns out not to embed.
     lastCandidates = tracks.map((t, ti) =>
       scored.filter((s) => s.ti === ti).map((s) => s.v.ytId)
     );
@@ -181,7 +181,7 @@
     const panel = el("aside", "", null);
     panel.id = "vinyltube-panel";
 
-    // Kop
+    // Header
     const head = el("header", "vt-head");
     const disc = el("div", "vt-disc");
     disc.appendChild(el("div", "vt-disc-label"));
@@ -194,13 +194,13 @@
     headText.appendChild(el("div", "vt-artist", artist));
     head.appendChild(headText);
     const collapse = el("button", "vt-collapse", "–");
-    collapse.title = "Inklappen";
+    collapse.title = "Collapse";
     head.appendChild(collapse);
     panel.appendChild(head);
 
     const body = el("div", "vt-body");
 
-    // Speler
+    // Player
     const playerWrap = el("div", "vt-player");
     body.appendChild(playerWrap);
     const nowPlaying = el("div", "vt-nowplaying");
@@ -230,6 +230,12 @@
       nowPlaying.appendChild(a);
     }
 
+    function toast(message) {
+      const t = el("div", "vt-toast", message);
+      body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
     function ensureIframe(firstId, autoplay) {
       playerWrap.innerHTML = "";
       const iframe = document.createElement("iframe");
@@ -237,7 +243,7 @@
       iframe.allow = "autoplay; encrypted-media";
       iframe.allowFullscreen = true;
       playerWrap.appendChild(iframe);
-      // De embed vertelt pas wat er speelt nadat we ons hebben aangemeld.
+      // The embed only reports what is playing after we subscribe.
       iframe.addEventListener("load", () => {
         try {
           iframe.contentWindow.postMessage(
@@ -249,9 +255,9 @@
       iframeEl = iframe;
     }
 
-    // Eén video tegelijk; volgende tracks laden we zelf via het
-    // berichtenkanaal in dezelfde speler. Geen playlist-parameter,
-    // dus geen stille overslagen.
+    // One video at a time; we load subsequent tracks ourselves through
+    // the message channel in the same player. No playlist parameter,
+    // so no silent skips.
     function play(id, autoplay) {
       requestedId = id;
       endedGuard = null;
@@ -259,8 +265,8 @@
       const t = byYtId[id];
       setCaption(t ? t.videoTitle : (poolInfo[id] ? poolInfo[id].title : ""));
       if (rowByYtId[id]) markPlaying(rowByYtId[id]);
-      // Commando als laatste: de speler kan direct terugpraten (fout of
-      // videoData) en die afhandeling moet onze UI-updates kunnen winnen.
+      // Command last: the player may talk back immediately (error or
+      // videoData) and that handling must be able to win over our UI updates.
       if (!iframeEl) {
         ensureIframe(id, autoplay);
       } else {
@@ -296,12 +302,12 @@
           return;
         }
       }
-      panel.classList.remove("vt-active"); // plaat is afgelopen
+      panel.classList.remove("vt-active"); // record has ended
     }
 
-    // Een video die de speler weigert (inbedden uitgezet, verwijderd,
-    // regioblokkade): probeer de volgende kandidaat voor die track, of
-    // toon anders een link naar YouTube en speel door met de rest.
+    // A video the player refuses (embedding disabled, removed, region
+    // block): try the next candidate for that track, or otherwise show
+    // a link to YouTube and keep playing the rest.
     function handleUnplayable(badId) {
       if (!badId || badIds.has(badId)) return;
       badIds.add(badId);
@@ -330,38 +336,38 @@
           row.classList.add("vt-broken");
         }
         setCaptionLink(
-          "Deze video staat geen inbedden toe · open op YouTube",
+          "This video does not allow embedding · open on YouTube",
           badId
         );
         advance();
       }
     }
 
-    // Actiebalk
+    // Action bar
     const actions = el("div", "vt-actions");
     if (matched > 0) {
-      const playAll = el("button", "vt-playall", "▶ Hele plaat");
-      playAll.title = "Speel alle gekoppelde tracks achter elkaar";
+      const playAll = el("button", "vt-playall", "▶ Whole record");
+      playAll.title = "Play all matched tracks back to back";
       actions.appendChild(playAll);
     }
     const status = el(
       "span",
       "vt-status",
       matched
-        ? `${matched} van ${tracks.length} tracks gekoppeld`
-        : "Geen gekoppelde video's, gebruik de zoeklinks"
+        ? `${matched} of ${tracks.length} tracks matched`
+        : "No matched videos, use the search links"
     );
-    status.title = "Klik voor de matchdiagnose";
+    status.title = "Click for match diagnostics";
     actions.appendChild(status);
     body.appendChild(actions);
 
-    // Diagnosepaneel: per track de kandidaten met scores.
+    // Diagnostics panel: the candidates with scores per track.
     const debugBox = el("div", "vt-debug");
     lastDebug.forEach((d) => {
       const line = el("div", "vt-debug-track", `${d.track} (${d.duration || "?"})`);
       debugBox.appendChild(line);
       if (!d.candidates.length) {
-        debugBox.appendChild(el("div", "vt-debug-cand", "geen kandidaten"));
+        debugBox.appendChild(el("div", "vt-debug-cand", "no candidates"));
       }
       d.candidates.forEach((c) => {
         const mm = c.seconds
@@ -382,7 +388,7 @@
       debugBox.style.display = debugBox.style.display === "none" ? "block" : "none";
     });
 
-    // Tracklijst
+    // Tracklist
     const list = el("ol", "vt-list");
     let playingRow = null;
 
@@ -411,17 +417,17 @@
         row.classList.add("vt-playable");
         row.title = "Video: " + (t.videoTitle || "");
         row.addEventListener("click", () => {
-          if (!t.ytId) return; // inmiddels als niet-inbedbaar gemarkeerd
+          if (!t.ytId) return; // marked as non-embeddable in the meantime
           playFrom(ti);
         });
       } else {
         row.classList.add("vt-searchable");
-        row.title = "Geen gekoppelde video; klik om op YouTube te zoeken";
-        const link = el("a", "vt-search", "zoek");
+        row.title = "No matched video; click to search YouTube";
+        const link = el("a", "vt-search", "search");
         link.href = searchUrl(artist, t.title);
         link.target = "_blank";
         link.rel = "noopener";
-        link.title = "Open YouTube-zoekresultaten in een nieuw tabblad";
+        link.title = "Open YouTube search results in a new tab";
         link.addEventListener("click", (e) => e.stopPropagation());
         row.appendChild(link);
         row.addEventListener("click", () => {
@@ -432,19 +438,19 @@
       list.appendChild(row);
     });
 
-    // Track zonder gekoppelde video: zelf op YouTube zoeken, de resultaten
-    // door dezelfde strenge matcher halen, en de beste treffer spelen.
+    // Track without a matched video: search YouTube ourselves, run the
+    // results through the same strict matcher, and play the best hit.
     function searchAndPlay(ti, row) {
       const t = tracks[ti];
       if (row.classList.contains("vt-searching")) return;
       row.classList.add("vt-searching");
-      setCaption("Zoeken op YouTube: " + t.title + "…");
+      setCaption("Searching YouTube: " + t.title + "…");
       chrome.runtime.sendMessage(
         { type: "ytSearch", q: (artist + " " + t.title).trim() },
         (res) => {
           row.classList.remove("vt-searching");
           if (chrome.runtime.lastError || !res || !res.ok) {
-            toast("Zoeken op YouTube lukte niet; gebruik de zoeklink.");
+            toast("YouTube search failed; use the search link.");
             setCaption("");
             return;
           }
@@ -453,8 +459,8 @@
             title: c.title,
             duration: c.seconds
           }));
-          // Matcher hergebruiken voor deze ene track; globale
-          // diagnosevelden even opzijzetten en terugzetten.
+          // Reuse the matcher for this single track; set the global
+          // diagnostics fields aside and restore them afterwards.
           const saveD = lastDebug, saveC = lastCandidates, saveP = lastPool;
           const matched = matchVideos([t], candVideos)[0];
           const searchCands = (lastCandidates[0] || []).slice();
@@ -462,7 +468,7 @@
           lastDebug = saveD; lastCandidates = saveC; lastPool = saveP;
 
           if (!matched.ytId) {
-            toast("Ook via zoeken geen overtuigende versie gevonden.");
+            toast("Search found no convincing version either.");
             setCaption("");
             return;
           }
@@ -480,11 +486,10 @@
       );
     }
 
-    // De embed rapporteert tijdens het spelen welke video aan de beurt is;
-    // daarmee blijven titelregel en tracklijst kloppen als de plaat
-    // vanzelf doorspeelt.
+    // While playing, the embed reports which video is up; this keeps the
+    // caption and tracklist correct when the record plays on by itself.
     window.addEventListener("message", (e) => {
-      if (!panel.isConnected) return; // paneel van een vorige pagina
+      if (!panel.isConnected) return; // panel from a previous page
       if (e.origin !== "https://www.youtube.com") return;
       if (!iframeEl || e.source !== iframeEl.contentWindow) return;
       let data;
@@ -493,14 +498,14 @@
       } catch (_) {
         return;
       }
-      // Expliciete fout van de speler (o.a. 101/150: inbedden uitgezet)
+      // Explicit player error (a.o. 101/150: embedding disabled)
       if (data && data.event === "onError") {
         const code = parseInt(data.info, 10);
         if ([2, 5, 100, 101, 150].includes(code)) handleUnplayable(requestedId);
         return;
       }
       if (!data || !data.info) return;
-      // Video afgelopen: zelf de volgende track laden.
+      // Video ended: load the next track ourselves.
       if (data.info.playerState === 0 && endedGuard !== requestedId) {
         endedGuard = requestedId;
         advance();
@@ -516,7 +521,7 @@
     body.appendChild(list);
     panel.appendChild(body);
 
-    // Eerste afspeelbare track alvast klaarzetten (zonder autoplay)
+    // Preload the first playable track (without autoplay)
     const initialIds = playableFrom(0);
     if (initialIds.length) {
       queue = initialIds;
@@ -527,10 +532,16 @@
       markPlaying(rowByYtId[initialIds[0]] || null);
     }
 
-    collapse.addEventListener("click", () => {
-      panel.classList.toggle("vt-collapsed");
-      collapse.textContent = panel.classList.contains("vt-collapsed") ? "+" : "–";
-      collapse.title = panel.classList.contains("vt-collapsed") ? "Uitklappen" : "Inklappen";
+    // Collapsed, the panel is just the disc; click to expand.
+    collapse.addEventListener("click", (e) => {
+      e.stopPropagation();
+      panel.classList.add("vt-collapsed");
+      panel.title = "Expand VinylTube";
+    });
+    panel.addEventListener("click", () => {
+      if (!panel.classList.contains("vt-collapsed")) return;
+      panel.classList.remove("vt-collapsed");
+      panel.title = "";
     });
 
     document.body.appendChild(panel);
@@ -548,16 +559,16 @@
     chrome.runtime.sendMessage({ type: "fetchDiscogs", kind, id }, (res) => {
       if (currentKey !== forKey) return;
       if (chrome.runtime.lastError || !res || !res.ok) {
-        showError("VinylTube kon deze release niet ophalen bij Discogs.");
+        showError("VinylTube could not fetch this release from Discogs.");
         return;
       }
       buildPanel(res.data);
     });
   }
 
-  // Shop- en sell-itempagina's: de release-ID staat in de pagina zelf,
-  // maar de inhoud wordt vertraagd opgebouwd. Zoek in links én in de
-  // ruwe HTML (datablobs), en blijf even geduldig proberen.
+  // Shop and sell item pages: the release ID is in the page itself, but
+  // the content builds up with a delay. Look in links and in the raw
+  // HTML (data blobs), and keep patiently trying for a while.
   function findReleaseIdInPage() {
     const links = document.querySelectorAll('a[href*="/release/"]');
     for (const a of links) {
@@ -573,14 +584,14 @@
   }
 
   function pollForReleaseId(forKey, attemptsLeft, interval) {
-    if (currentKey !== forKey) return; // gebruiker is alweer verder genavigeerd
+    if (currentKey !== forKey) return; // user has already navigated on
     const releaseId = findReleaseIdInPage();
     if (releaseId) {
       fetchAndBuild("release", releaseId, forKey);
       return;
     }
     if (attemptsLeft <= 0) {
-      showError("VinylTube kon op deze pagina geen release vinden.");
+      showError("VinylTube could not find a release on this page.");
       return;
     }
     setTimeout(() => pollForReleaseId(forKey, attemptsLeft - 1, interval), interval);
@@ -604,7 +615,7 @@
     }
   }
 
-  // Discogs navigeert deels client-side, dus houd URL-wijzigingen in de gaten.
+  // Discogs partly navigates client-side, so watch for URL changes.
   let lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== lastUrl) {

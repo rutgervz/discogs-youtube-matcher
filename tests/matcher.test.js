@@ -1,4 +1,4 @@
-// Regressietest van de matcher op vier echte platen.
+// Regression test of the matcher on four real records.
 const src = require("fs").readFileSync(require("path").join(__dirname, "..", "extension", "content.js"), "utf8");
 const start = src.indexOf("function ytIdFromUri");
 const end = src.indexOf("function searchUrl");
@@ -17,10 +17,10 @@ function show(name, tracks, videos, expect) {
     const ok = got === expect[i];
     if (!ok) allOk = false;
     const v = videos.find((x) => got && x.uri.endsWith(got));
-    console.log(` ${ok ? "✔" : "✘"} ${r.position || i} ${r.title} → ${v ? v.title : "geen match"}`);
+    console.log(` ${ok ? "✔" : "✘"} ${r.position || i} ${r.title} → ${v ? v.title : "no match"}`);
   });
   if (!allOk) failures++;
-  console.log(allOk ? `${name}: ALLES GOED\n` : `${name}: FOUT\n`);
+  console.log(allOk ? `${name}: ALL GOOD\n` : `${name}: FAIL\n`);
 }
 
 console.log("== Rhythm Controll – My House (1284613) ==");
@@ -79,7 +79,7 @@ show("Cherrymoon",
   ["JZXve_jk1gs", "ggmRh719v9s"]
 );
 
-console.log("== Madonna – Confessions II (zonder trackduren) ==");
+console.log("== Madonna – Confessions II (without track durations) ==");
 show("Madonna",
   [
     { position: "A1", title: "I Feel So Free", duration: "" },

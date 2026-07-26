@@ -1,15 +1,22 @@
-// VinylTube op YouTube: toont bij het afspelen van een nummer of het op
-// vinyl te koop is bij Discogs, met prijzen en directe links.
+// VinylTube on YouTube: while a track plays, shows whether it is for
+// sale on vinyl at Discogs, with prices and direct links.
 
 (() => {
   let currentVideoId = null;
+  let collapsed = false;
+
+  // With the video in fullscreen the panel should be out of sight.
+  document.addEventListener("fullscreenchange", () => {
+    const panel = document.getElementById("vinyltube-yt-panel");
+    if (panel) panel.classList.toggle("vt-fs-hidden", !!document.fullscreenElement);
+  });
 
   function getVideoId() {
     const m = location.search.match(/[?&]v=([\w-]{11})/);
     return m ? m[1] : null;
   }
 
-  // Ruis uit videotitels: (Official Video), [HD], (Lyric Video), enz.
+  // Noise out of video titles: (Official Video), [HD], (Lyric Video), etc.
   function cleanTitle(raw) {
     return raw
       .replace(/\s*[\(\[][^)\]]*(official|video|audio|visualizer|lyric|lyrics|hd|hq|4k|remaster|music video|clip)[^)\]]*[\)\]]/gi, "")
@@ -61,32 +68,46 @@
     disc.appendChild(el("div", "vt-disc-label"));
     head.appendChild(disc);
     const headText = el("div", "vt-head-text");
-    headText.appendChild(el("div", "vt-title", "Op vinyl?"));
+    headText.appendChild(el("div", "vt-title", "On vinyl?"));
     headText.appendChild(el("div", "vt-artist", "Discogs"));
     head.appendChild(headText);
     const collapse = el("button", "vt-collapse", "–");
+    collapse.title = "Collapse";
     head.appendChild(collapse);
     panel.appendChild(head);
     const body = el("div", "vt-body");
     panel.appendChild(body);
-    collapse.addEventListener("click", () => {
-      panel.classList.toggle("vt-collapsed");
-      collapse.textContent = panel.classList.contains("vt-collapsed") ? "+" : "–";
+    const applyCollapsed = () => {
+      panel.classList.toggle("vt-collapsed", collapsed);
+      panel.title = collapsed ? "Expand VinylTube" : "";
+    };
+    collapse.addEventListener("click", (e) => {
+      e.stopPropagation();
+      collapsed = true;
+      applyCollapsed();
     });
+    // Collapsed, the panel is just the disc; click to expand.
+    panel.addEventListener("click", () => {
+      if (!collapsed) return;
+      collapsed = false;
+      applyCollapsed();
+    });
+    applyCollapsed();
+    if (document.fullscreenElement) panel.classList.add("vt-fs-hidden");
     document.body.appendChild(panel);
     return body;
   }
 
-  // Zoekveld: vooringevuld met de ontlede titel, direct te corrigeren.
+  // Search field: prefilled with the parsed title, ready to correct.
   function addSearchBar(body, initialQuery) {
     const bar = el("div", "vty-searchbar");
     const input = document.createElement("input");
     input.type = "text";
     input.className = "vty-tokeninput";
     input.value = initialQuery || "";
-    input.placeholder = "Artiest en nummer";
-    input.setAttribute("aria-label", "Zoek op Discogs");
-    const go = el("button", "vt-playall", "Zoek");
+    input.placeholder = "Artist and track";
+    input.setAttribute("aria-label", "Search Discogs");
+    const go = el("button", "vt-playall", "Search");
     bar.appendChild(input);
     bar.appendChild(go);
     body.appendChild(bar);
@@ -97,7 +118,7 @@
     go.addEventListener("click", fire);
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") fire();
-      e.stopPropagation(); // YouTube-sneltoetsen niet laten meeluisteren
+      e.stopPropagation(); // keep YouTube shortcuts from listening in
     });
     input.addEventListener("keyup", (e) => e.stopPropagation());
     input.addEventListener("keypress", (e) => e.stopPropagation());
@@ -114,7 +135,7 @@
         if (!res.ok) {
           if (res.error === "no_token") return showTokenSetup();
           if (res.error === "auth")
-            return showTokenSetup("Token ongeldig of verlopen; plak een nieuwe.");
+            return showTokenSetup("Token invalid or expired; paste a new one.");
           return removePanel();
         }
         showResults(parsed, res.data, q);
@@ -123,7 +144,7 @@
   }
 
   function euro(v) {
-    return "€ " + Number(v).toFixed(2).replace(".", ",");
+    return "€ " + Number(v).toFixed(2);
   }
 
   function showResults(parsed, data, usedQuery) {
@@ -135,9 +156,9 @@
 
     if (!results.length) {
       body.appendChild(
-        el("div", "vty-summary", "Niets op vinyl gevonden. Pas de zoekterm hierboven aan, videotitels zijn soms eigenwijs.")
+        el("div", "vty-summary", "Nothing found on vinyl. Adjust the search above, video titles can be stubborn.")
       );
-      const link = el("a", "vty-alllink", "Zelf zoeken op Discogs");
+      const link = el("a", "vty-alllink", "Search Discogs yourself");
       link.href =
         "https://www.discogs.com/search/?type=release&format=Vinyl&q=" +
         encodeURIComponent(shownQuery);
@@ -156,8 +177,8 @@
         "div",
         "vty-summary",
         cheapest
-          ? `Op vinyl te koop vanaf ${euro(cheapest.lowest)}`
-          : "Wel op vinyl verschenen, nu geen aanbiedingen gevonden"
+          ? `For sale on vinyl from ${euro(cheapest.lowest)}`
+          : "Released on vinyl, but no listings found right now"
       )
     );
 
@@ -191,9 +212,9 @@
           r.numForSale == null
             ? ""
             : r.numForSale > 0
-            ? `${r.numForSale} te koop` +
-              (r.lowest != null ? ` vanaf ${euro(r.lowest)}` : "")
-            : "geen aanbiedingen"
+            ? `${r.numForSale} for sale` +
+              (r.lowest != null ? ` from ${euro(r.lowest)}` : "")
+            : "no listings"
         )
       );
       row.appendChild(info);
@@ -202,7 +223,7 @@
     body.appendChild(list);
 
     if (data.total > results.length) {
-      const link = el("a", "vty-alllink", `Alle ${data.total} resultaten op Discogs`);
+      const link = el("a", "vty-alllink", `All ${data.total} results on Discogs`);
       link.href =
         "https://www.discogs.com/search/?type=release&format=Vinyl&q=" +
         encodeURIComponent(shownQuery);
@@ -219,10 +240,10 @@
         "div",
         "vty-summary",
         message ||
-          "Voor vinyl zoeken is een gratis Discogs-token nodig (eenmalig)."
+          "Vinyl search needs a free Discogs token (one-time setup)."
       )
     );
-    const help = el("a", "vty-alllink", "Token aanmaken op discogs.com");
+    const help = el("a", "vty-alllink", "Create a token on discogs.com");
     help.href = "https://www.discogs.com/settings/developers";
     help.target = "_blank";
     help.rel = "noopener";
@@ -230,9 +251,9 @@
     const form = el("div", "vty-tokenform");
     const input = document.createElement("input");
     input.type = "password";
-    input.placeholder = "Plak je token hier";
+    input.placeholder = "Paste your token here";
     input.className = "vty-tokeninput";
-    const save = el("button", "vt-playall", "Opslaan");
+    const save = el("button", "vt-playall", "Save");
     form.appendChild(input);
     form.appendChild(save);
     body.appendChild(form);
@@ -249,7 +270,7 @@
   function showLoading(parsed) {
     const body = basePanel();
     body.appendChild(
-      el("div", "vty-summary", `Zoeken op Discogs: ${parsed.artist ? parsed.artist + " · " : ""}${parsed.track}`)
+      el("div", "vty-summary", `Searching Discogs: ${parsed.artist ? parsed.artist + " · " : ""}${parsed.track}`)
     );
   }
 
@@ -263,7 +284,7 @@
     if (!vid || vid === currentVideoId) return;
     currentVideoId = vid;
 
-    // Titel kan bij navigatie even achterlopen; kort wachten.
+    // The title can lag briefly on navigation; wait a moment.
     setTimeout(() => {
       if (currentVideoId !== vid) return;
       const parsed = parseTitle();
@@ -277,7 +298,7 @@
           if (!res.ok) {
             if (res.error === "no_token") return showTokenSetup();
             if (res.error === "auth")
-              return showTokenSetup("Token ongeldig of verlopen; plak een nieuwe.");
+              return showTokenSetup("Token invalid or expired; paste a new one.");
             return removePanel();
           }
           showResults(parsed, res.data);

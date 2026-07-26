@@ -1,19 +1,19 @@
 # Discogs Youtube Matcher
 
-Browserextensie (Manifest V3, geen buildstap) die Discogs en YouTube in twee richtingen verbindt. Live op https://rutgervz.github.io/discogs-youtube-matcher/
+Browser extension (Manifest V3, no build step) connecting Discogs and YouTube in both directions. Live at https://rutgervz.github.io/discogs-youtube-matcher/
 
-## Structuur
+## Structure
 
-`extension/content.js` draait op discogs.com: tracklistpaneel, de matcher, en de speler (één embed-iframe, eigen wachtrij, doorspelen via het postMessage-kanaal van YouTube). `extension/yt-content.js` draait op youtube.com: vinyl-zoekpaneel met Discogs-token. `extension/background.js` praat met de Discogs API (release/master/search/marketplace-stats) en doet YouTube-zoekopdrachten voor tracks zonder gekoppelde video. `docs/` is de website (GitHub Pages) inclusief de download-zip van de extensie.
+`extension/content.js` runs on discogs.com: tracklist panel, the matcher, and the player (one embed iframe, its own queue, advancing tracks via YouTube's postMessage channel). `extension/yt-content.js` runs on youtube.com: vinyl search panel with Discogs token. `extension/background.js` talks to the Discogs API (release/master/search/marketplace stats) and performs YouTube searches for tracks without a linked video. `docs/` is the website (GitHub Pages) including the extension's download zip.
 
-## De matcher (hart van het project)
+## The matcher (heart of the project)
 
-Koppelt Discogs-tracks aan YouTube-video's op woordniveau, met mixnaam-conflictstraf (Long Version mag nooit een Radio Edit worden), tijdsduur als scheidsrechter, en een ondergrens van 0,7: liever eerlijk geen match dan zeker een verkeerde. Elke wijziging aan de matcher MOET langs `npm test`: vier echte platen uit de verzameling van de eigenaar, inclusief het bewust niet-matchen. Gaat er in het echt een plaat stuk, voeg die dan toe als nieuwe testcase voordat je fixt.
+Matches Discogs tracks to YouTube videos at word level, with a mix-name conflict penalty (a Long Version must never become a Radio Edit), duration as tiebreaker, and a lower bound of 0.7: better honestly no match than confidently a wrong one. Every change to the matcher MUST pass `npm test`: four real records from the owner's collection, including the deliberate non-matches. If a record breaks in the wild, add it as a new test case before fixing.
 
-## Afspeellaag: geleerde lessen
+## Playback layer: lessons learned
 
-Gebruik NOOIT de playlist-parameter van YouTube-embeds; die slaat niet-inbedbare video's stil over. De huidige aanpak (één video tegelijk, zelf doorschakelen bij playerState 0) is daar de oplossing voor. Niet-inbedbare video's (onError 101/150 of stille weigering) krijgen automatisch de volgende kandidaat van die track.
+NEVER use the playlist parameter of YouTube embeds; it silently skips non-embeddable videos. The current approach (one video at a time, advancing ourselves on playerState 0) is the solution to that. Non-embeddable videos (onError 101/150 or silent refusal) automatically get that track's next candidate.
 
-## Conventies
+## Conventions
 
-UI-teksten in het Nederlands, website in het Engels. Versienummer in manifest.json ophogen bij elke release en de zip in docs/ opnieuw genereren: `cd .. && zip -r docs/discogs-youtube-matcher.zip extension`. Na push vernieuwt GitHub Pages vanzelf. Commit-berichten kort en beschrijvend.
+Everything in English: UI copy, code comments, tests, and docs. Bump the version number in manifest.json on every release, regenerate the zip in docs/ (from the repo root: `rm docs/discogs-youtube-matcher.zip && zip -r docs/discogs-youtube-matcher.zip extension`), and publish a GitHub release with the zip as asset: `gh release create v<version> docs/discogs-youtube-matcher.zip --title "v<version>" --notes "<short notes>"`. The download button on the website points at releases/latest/download so GitHub counts downloads per version (`gh api repos/rutgervz/discogs-youtube-matcher/releases --jq '.[] | {tag: .tag_name, downloads: .assets[0].download_count}'`). GitHub Pages refreshes by itself after a push. Commit messages short and descriptive.

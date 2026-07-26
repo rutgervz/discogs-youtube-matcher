@@ -1,5 +1,5 @@
 // VinylTube background service worker
-// Haalt release- of masterdata op bij de Discogs API en cachet per sessie.
+// Fetches release or master data from the Discogs API and caches per session.
 
 const cache = new Map();
 
@@ -18,9 +18,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// Zoeken naar vinylreleases met deze track, plus per release de
-// marktplaatsstand (aantal te koop, laagste prijs). Vereist een
-// persoonlijke Discogs-token.
+// Search for vinyl releases with this track, plus per release the
+// marketplace state (number for sale, lowest price). Requires a
+// personal Discogs token.
 async function handleSearch(msg, sendResponse) {
   try {
     const { discogsToken } = await chrome.storage.sync.get("discogsToken");
@@ -47,17 +47,17 @@ async function handleSearch(msg, sendResponse) {
       u.searchParams.set("per_page", "8");
       const r = await fetch(u, { headers });
       if (r.status === 401) throw new Error("auth");
-      if (!r.ok) throw new Error("Discogs API gaf status " + r.status);
+      if (!r.ok) throw new Error("Discogs API returned status " + r.status);
       return (await r.json()).results || [];
     }
 
     const stripParens = (s) => (s || "").replace(/[\(\[][^)\]]*[\)\]]/g, " ").replace(/\s{2,}/g, " ").trim();
 
-    // Van strak naar los: elke volgende poging vergeeft meer ruis in de
-    // videotitel. De eerste poging die iets vindt, wint.
+    // From strict to loose: each next attempt forgives more noise in the
+    // video title. The first attempt that finds anything wins.
     const attempts = [];
     if (msg.q && msg.userQuery) {
-      attempts.push({ q: msg.q }); // handmatige zoekopdracht: letterlijk nemen
+      attempts.push({ q: msg.q }); // manual query: take it literally
     } else {
       if (msg.artist && msg.track) {
         attempts.push({ artist: msg.artist, track: msg.track });
@@ -131,7 +131,7 @@ function handleFetch(msg, sendResponse) {
     headers: { Accept: "application/vnd.discogs.v2.plaintext+json" }
   })
     .then((r) => {
-      if (!r.ok) throw new Error(`Discogs API gaf status ${r.status}`);
+      if (!r.ok) throw new Error(`Discogs API returned status ${r.status}`);
       return r.json();
     })
     .then((data) => {
@@ -157,8 +157,8 @@ function handleFetch(msg, sendResponse) {
     .catch((err) => sendResponse({ ok: false, error: String(err) }));
 }
 
-// YouTube doorzoeken voor tracks zonder gekoppelde Discogs-video.
-// Leest de resultatenpagina en licht de videoRenderers uit ytInitialData.
+// Search YouTube for tracks without a linked Discogs video.
+// Reads the results page and lifts the videoRenderers out of ytInitialData.
 async function handleYtSearch(msg, sendResponse) {
   try {
     const u =
@@ -167,7 +167,7 @@ async function handleYtSearch(msg, sendResponse) {
     const r = await fetch(u, {
       headers: { "Accept-Language": "en-US,en;q=0.8" }
     });
-    if (!r.ok) throw new Error("YouTube gaf status " + r.status);
+    if (!r.ok) throw new Error("YouTube returned status " + r.status);
     const html = await r.text();
     const m = html.match(/var ytInitialData\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
     if (!m) {
