@@ -95,4 +95,21 @@ show("Madonna",
   ["Zx83eVfP64A", "EHrt-gFgvXo", "pny6ILbAyWc"]
 );
 
+console.log("== 2manydjs – As Heard On Radio Soulwax Pt.2 (24877952, VA mix with track artists) ==");
+show("Soulwax",
+  [
+    { position: "A2", artists: ["Peaches"], title: "Fuck The Pain Away", duration: "1:38" },
+    { position: "A3", artists: ["The Velvet Underground"], title: "I'm Waiting For The Man", duration: "0:57" },
+    { position: "B1.1", artists: ["The Stooges"], title: "No Fun", duration: "2:31" }
+  ],
+  [
+    V("fullmix2mdA", "As Heard on Radio Soulwax Pt. 2", "60:44"),
+    V("fullmix2mdB", "2 Many DJ's: As Heard On Radio Soulwax (Part 2)", "61:27"),
+    V("bowieWFTM11", "David Bowie - I'm Waiting For The Man", "4:04"),
+    V("peachesFTPA", "Peaches - Fuck The Pain Away (Official Video)", "3:57"),
+    V("velvetWFTM1", "The Velvet Underground - I'm Waiting For The Man (Official Audio)", "4:39")
+  ],
+  ["peachesFTPA", "velvetWFTM1", null]
+);
+
 process.exitCode = failures ? 1 : 0;

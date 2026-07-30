@@ -1,39 +1,39 @@
 # Discogs YouTube Matcher
 
-Browserextensie die op Discogs release-, master- en shoppagina's automatisch een paneel toont met de volledige tracklist, afspeelbaar in het paneel zelf via een ingebedde YouTube-speler.
+Browser extension that automatically shows a panel with the full tracklist on Discogs release, master and shop pages, playable in the panel itself through an embedded YouTube player.
 
-## Hoe het werkt
+## How it works
 
-De extensie leest het release-ID uit de URL (of vist het bij shopitems uit de pagina) en vraagt de release op bij de Discogs API. Die geeft naast de tracklist ook de YouTube-video's terug die de community aan de release heeft gekoppeld.
+The extension reads the release ID from the URL (or fishes it out of the page on shop items) and requests the release from the Discogs API. Along with the tracklist, that returns the YouTube videos the community has linked to the release.
 
-Klik je een track, dan speelt die direct in het paneel, en loopt de rest van de plaat vanzelf door. De knop "Hele plaat" start bij track één. Tracks zonder gekoppelde video krijgen een zoeklink die YouTube opent met artiest en titel.
+Click a track and it plays right in the panel, with the rest of the record following by itself. The "Whole record" button starts at track one. Tracks without a linked video get a search link that opens YouTube with artist and title.
 
-## YouTube Premium en reclame
+## YouTube Premium and ads
 
-De ingebedde speler gebruikt je gewone YouTube-login, mits Chrome cookies van derden toestaat voor YouTube. Zo controleer of regel je dat:
+The embedded player uses your regular YouTube login, provided Chrome allows third-party cookies for YouTube. Check or arrange it like this:
 
 1. Open chrome://settings/cookies
-2. Kies "Cookies van derden toestaan", of houd blokkeren aan en voeg bij "Sites die cookies van derden mogen gebruiken" toe: [*.]youtube.com
-3. Herlaad de Discogs-pagina
+2. Choose "Allow third-party cookies", or keep blocking on and add under "Sites allowed to use third-party cookies": [*.]youtube.com
+3. Reload the Discogs page
 
-Zie je in de embed rechtsboven je profielfoto als je op het YouTube-logo let, dan ben je ingelogd en is het reclamevrij met Premium. In incognitovensters ben je uitgelogd en verschijnt er wel reclame.
+If you see your profile picture in the top right of the embed when you check the YouTube logo, you are signed in and it is ad-free with Premium. In incognito windows you are signed out and ads do appear.
 
-## Installeren (Chrome, Brave, Edge, Arc)
+## Install (Chrome, Brave, Edge, Arc)
 
-1. Pak de zip uit naar een vaste map (de browser leest de bestanden vanaf die plek)
+1. Extract the zip to a permanent folder (the browser reads the files from that location)
 2. Open chrome://extensions
-3. Zet rechtsboven "Ontwikkelaarsmodus" aan
-4. Klik op "Uitgepakte extensie laden" en kies de map
-5. Open een release of shopitem op Discogs, het paneel verschijnt rechtsonder
+3. Enable "Developer mode" in the top right
+4. Click "Load unpacked" and choose the folder
+5. Open a release or shop item on Discogs, the panel appears in the bottom right
 
-Update je van een eerdere versie: vervang de bestanden in dezelfde map, klik op het vernieuwpijltje bij de extensie op chrome://extensions, en ververs open Discogs-tabbladen.
+Updating from an earlier version: replace the files in the same folder, click the refresh arrow next to the extension on chrome://extensions, and reload open Discogs tabs.
 
-## Op YouTube: is dit op vinyl te koop?
+## On YouTube, Spotify and Beatport: is this for sale on vinyl?
 
-Op elke YouTube-watchpagina toont VinylTube een paneel dat de videotitel ontleedt naar artiest en nummer en bij Discogs zoekt naar vinylreleases met die track, inclusief hoeveel exemplaren te koop staan en vanaf welke prijs. Klik op een release om hem op Discogs te openen.
+On every YouTube watch page, VinylTube shows a panel that parses the video title into artist and track and searches Discogs for vinyl releases with that track, including how many copies are for sale and from what price. The same panel appears on the Spotify web player and on Beatport, following whatever is playing in the player bar. Click a release to open it on Discogs.
 
-Hiervoor is eenmalig een gratis persoonlijke Discogs-token nodig: maak hem aan op https://www.discogs.com/settings/developers ("Generate new token") en plak hem in het paneel op YouTube. De token blijft lokaal in je browser opgeslagen.
+This needs a free personal Discogs token, once: create it at https://www.discogs.com/settings/developers ("Generate new token") and paste it into the panel. The token stays stored locally in your browser.
 
-## Goed om te weten
+## Good to know
 
-De Discogs API staat zonder authenticatie 25 verzoeken per minuut toe; opgehaalde releases worden per sessie gecachet. Het paneel is inklapbaar via de knop rechtsboven in de kop.
+The Discogs API allows 25 requests per minute without authentication; fetched releases are cached per session. The panel collapses to just the disc icon via the button in the top right of the header, and hides while a video plays fullscreen.

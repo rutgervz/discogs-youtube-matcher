@@ -67,7 +67,12 @@
 
     const scored = [];
     tracks.forEach((t, ti) => {
-      const norm = normalize(t.title);
+      // Tracks on various-artist releases (DJ mixes, compilations) carry
+      // their own artists; those words count fully in the comparison, so
+      // an original beats a cover with the identical title.
+      const artistPart =
+        t.artists && t.artists.length ? t.artists.join(" ") + " " : "";
+      const norm = normalize(artistPart + t.title);
       const tokens = norm.split(" ").filter(Boolean);
       const tokenSet = new Set(tokens);
       const coreTokens = tokens.filter((w) => !MIX_WORDS.has(w));
@@ -126,7 +131,11 @@
           seconds: s.v.seconds,
           chosen: trackMatch[ti] && trackMatch[ti].ytId === s.v.ytId
         }));
-      return { track: t.title, duration: t.duration, candidates };
+      const label =
+        t.artists && t.artists.length
+          ? t.artists.join(", ") + " – " + t.title
+          : t.title;
+      return { track: label, duration: t.duration, candidates };
     });
 
     // Fallback options: all candidates per track in score order, and an
@@ -407,8 +416,12 @@
 
     tracks.forEach((t, ti) => {
       const row = el("li", "vt-row");
+      const trackArtists =
+        t.artists && t.artists.length ? t.artists.join(", ") : "";
       row.appendChild(el("span", "vt-pos", t.position));
-      row.appendChild(el("span", "vt-name", t.title));
+      row.appendChild(
+        el("span", "vt-name", trackArtists ? trackArtists + " – " + t.title : t.title)
+      );
       if (t.duration) row.appendChild(el("span", "vt-dur", t.duration));
 
       if (t.ytId) {
@@ -424,7 +437,7 @@
         row.classList.add("vt-searchable");
         row.title = "No matched video; click to search YouTube";
         const link = el("a", "vt-search", "search");
-        link.href = searchUrl(artist, t.title);
+        link.href = searchUrl(trackArtists || artist, t.title);
         link.target = "_blank";
         link.rel = "noopener";
         link.title = "Open YouTube search results in a new tab";
@@ -445,8 +458,12 @@
       if (row.classList.contains("vt-searching")) return;
       row.classList.add("vt-searching");
       setCaption("Searching YouTube: " + t.title + "…");
+      // The track's own artist beats the release artist; on a DJ mix the
+      // release artist ("2 Many DJ's") finds nothing.
+      const qArtist =
+        t.artists && t.artists.length ? t.artists.join(" ") : artist;
       chrome.runtime.sendMessage(
-        { type: "ytSearch", q: (artist + " " + t.title).trim() },
+        { type: "ytSearch", q: (qArtist + " " + t.title).trim() },
         (res) => {
           row.classList.remove("vt-searching");
           if (chrome.runtime.lastError || !res || !res.ok) {

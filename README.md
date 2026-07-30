@@ -4,7 +4,7 @@ A browser extension for record collectors, working in two directions.
 
 **On Discogs**, every release, master or marketplace item gets a panel with the full tracklist, playable straight from the page via YouTube. The matcher reads mix names and uses track durations to pick the right version, falls back to alternative uploads when a video refuses to embed, and searches YouTube itself for tracks the Discogs community never linked.
 
-**On YouTube**, every track shows whether it was pressed on vinyl and whether copies are for sale on Discogs, with the number of listings and the lowest price.
+**On YouTube, Spotify and Beatport**, every track shows whether it was pressed on vinyl and whether copies are for sale on Discogs, with the number of listings and the lowest price. The panel follows whatever is playing.
 
 Website and download: see the `docs/` folder, served via GitHub Pages.
 
@@ -19,6 +19,6 @@ Two optional finishing touches: allow third-party cookies for `[*.]discogs.com` 
 
 ## Development
 
-Plain Manifest V3, no build step. `extension/content.js` runs on Discogs (tracklist panel, matcher, player), `extension/yt-content.js` runs on YouTube (vinyl search panel), `extension/background.js` talks to the Discogs API and performs YouTube searches.
+Plain Manifest V3, no build step. `extension/content.js` runs on Discogs (tracklist panel, matcher, player); `extension/vinyl-panel.js` is the shared vinyl search panel, driven by the per-site sniffers `extension/yt-content.js`, `extension/spotify-content.js` and `extension/beatport-content.js`; `extension/background.js` talks to the Discogs API and performs YouTube searches.
 
 Made on Schiermonnikoog, built in conversation with AI, tested on disco, techno and Madonna. Not an official Discogs or YouTube application; all trademarks belong to their respective owners.

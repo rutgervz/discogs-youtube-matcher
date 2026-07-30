@@ -143,7 +143,12 @@ function handleFetch(msg, sendResponse) {
           .map((t) => ({
             position: t.position || "",
             title: t.title || "",
-            duration: t.duration || ""
+            duration: t.duration || "",
+            // Track-level artists (various-artist releases); strip the
+            // Discogs disambiguation suffix like "(2)".
+            artists: (t.artists || []).map((a) =>
+              (a.name || "").replace(/\s*\(\d+\)$/, "")
+            )
           })),
         videos: (data.videos || []).map((v) => ({
           uri: v.uri || "",

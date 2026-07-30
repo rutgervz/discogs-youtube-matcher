@@ -4,7 +4,7 @@ Browser extension (Manifest V3, no build step) connecting Discogs and YouTube in
 
 ## Structure
 
-`extension/content.js` runs on discogs.com: tracklist panel, the matcher, and the player (one embed iframe, its own queue, advancing tracks via YouTube's postMessage channel). `extension/yt-content.js` runs on youtube.com: vinyl search panel with Discogs token. `extension/background.js` talks to the Discogs API (release/master/search/marketplace stats) and performs YouTube searches for tracks without a linked video. `docs/` is the website (GitHub Pages) including the extension's download zip.
+`extension/content.js` runs on discogs.com: tracklist panel, the matcher, and the player (one embed iframe, its own queue, advancing tracks via YouTube's postMessage channel). `extension/vinyl-panel.js` is the shared vinyl search panel (Discogs token, results, collapse/fullscreen behavior), exposed as `window.VinylPanel`; the per-site sniffers `yt-content.js`, `spotify-content.js` and `beatport-content.js` detect what is playing and call `VinylPanel.lookup(artist, track, q)`. `extension/background.js` talks to the Discogs API (release/master/search/marketplace stats) and performs YouTube searches for tracks without a linked video. `docs/` is the website (GitHub Pages) including the extension's download zip.
 
 ## The matcher (heart of the project)
 
